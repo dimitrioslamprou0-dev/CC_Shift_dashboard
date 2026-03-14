@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shift Schedule Dashboard</title>
+<style>
+  :root {
+    --bg0:#05070f; --bg1:#071022;
+    --card:rgba(255,255,255,0.06);
+    --text:rgba(255,255,255,0.92);
+    --muted:rgba(255,255,255,0.65);
+    --grid:rgba(255,255,255,0.10);
+    --shadow:0 18px 60px rgba(0,0,0,0.55);
+    --radius:18px;
+    --c-am:#1ad1ff; --c-amt:#2aa7ff; --c-pmt:#b86bff; --c-off:#ffd166; --c-weekend:#ff5d8f; --c-h:#a7f3d0;
+    --c-weekrow: rgba(255,255,255,0.035);
+    --c-badbg: rgba(255,77,77,0.22);
+    --c-totalbg: rgba(255,209,102,0.14);
+    --c-phbg: rgba(167,243,208,0.14);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    color:var(--text);
+    background:
+      radial-gradient(1200px 800px at 20% 10%, rgba(26,209,255,0.16), transparent 60%),
+      radial-gradient(1000px 700px at 80% 20%, rgba(184,107,255,0.14), transparent 62%),
+      radial-gradient(900px 650px at 35% 90%, rgba(255,93,143,0.10), transparent 55%),
+      linear-gradient(180deg, var(--bg0), var(--bg1));
+    min-height:100vh;
+  }
+  .wrap{max-width:1640px;margin:0 auto;padding:18px 18px 26px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px}
+  h1{margin:0;font-size:22px;letter-spacing:.2px}
+  .panel{background:var(--card);border:1px solid rgba(255,255,255,0.10);box-shadow:var(--shadow);border-radius:var(--radius);overflow:hidden}
+  .tabs{display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.10);background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));}
+  .tab{height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.18);color:var(--text);cursor:pointer;font-weight:800;font-size:13px;}
+  .tab.active{border-color: rgba(26,209,255,0.45);box-shadow: 0 0 0 3px rgba(26,209,255,0.12);}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;padding:12px 12px 10px;border-bottom:1px solid rgba(255,255,255,0.10);background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));}
+  .ctrl{display:grid;gap:6px;min-width:170px}
+  .ctrl label{font-size:12px;color:var(--muted)}
+  .ctrl input,.ctrl select{height:36px;padding:0 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.25);color:var(--text);outline:none;}
+  .ctrl input:focus,.ctrl select:focus{border-color:rgba(26,209,255,0.55);box-shadow:0 0 0 3px rgba(26,209,255,0.14);}
+  .btn{height:36px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.22);color:var(--text);cursor:pointer;}
+  .btn:hover{border-color:rgba(26,209,255,0.45)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:10px 12px 12px;color:var(--muted);font-size:12px;}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.18);}
+  .dot{width:10px;height:10px;border-radius:999px;box-shadow:0 0 0 2px rgba(0,0,0,0.25)}
+  .content{display:none}
+  .content.active{display:block}
+  .grid{display:grid;grid-template-columns: 1fr 120px 360px;gap:12px;padding:0 12px 12px;align-items:start;}
+  .pane{background:rgba(0,0,0,0.12);border:1px solid rgba(255,255,255,0.10);border-radius:16px;overflow:hidden;}
+  .paneHeader{padding:10px 12px;font-weight:900;font-size:13px;color:rgba(255,255,255,0.88);border-bottom:1px solid rgba(255,255,255,0.10);background: rgba(255,255,255,0.03);}
+  .scrollY{overflow-y:auto;overflow-x:hidden;max-height: calc(100vh - 290px);}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);padding:10px 10px;text-align:center;font-weight:800;font-size:13px;white-space:nowrap;}
+  tbody td{height:56px;font-size:14px;letter-spacing:.2px;min-height:56px}
+  thead th{position:sticky;top:0;z-index:3;background: rgba(6,12,26,0.92);backdrop-filter: blur(10px);border-bottom:1px solid rgba(255,255,255,0.14);}
+  .stickyL{position:sticky;left:0;z-index:2;background: rgba(6,12,26,0.92);backdrop-filter: blur(10px)}
+  .stickyL2{position:sticky;left:150px;z-index:2;background: rgba(6,12,26,0.92);backdrop-filter: blur(10px)}
+  thead .stickyL, thead .stickyL2{z-index:4}
+  .col-date{width:150px;min-width:150px;max-width:150px;text-align:left;padding-left:12px}
+  .col-day{width:140px;min-width:140px;max-width:140px;text-align:left;padding-left:12px}
+  .cellSel,.phSel{
+    width:100%;height:44px;min-height:44px;border-radius:12px;border:1px solid rgba(255,255,255,0.10);
+    background:rgba(3,10,24,0.92);color:var(--text);font-weight:900;text-align:center;outline:none;cursor:pointer;
+  }
+  .cellSel:focus,.phSel:focus{border-color: rgba(26,209,255,0.55);box-shadow: 0 0 0 3px rgba(26,209,255,0.12);}
+  .cellSel option,.phSel option{background:#081120;color:#f4f8ff;}
+  .shift-AM   { background: color-mix(in srgb, var(--c-am) 26%, rgba(0,0,0,0.42)); }
+  .shift-AMT  { background: color-mix(in srgb, var(--c-amt) 26%, rgba(0,0,0,0.42)); }
+  .shift-PMT  { background: color-mix(in srgb, var(--c-pmt) 26%, rgba(0,0,0,0.42)); }
+  .shift-OFF  { background: color-mix(in srgb, var(--c-off) 28%, rgba(0,0,0,0.42)); }
+  .shift-WE   { background: color-mix(in srgb, var(--c-weekend) 28%, rgba(0,0,0,0.42)); }
+  .shift-H    { background: color-mix(in srgb, var(--c-h) 24%, rgba(0,0,0,0.42)); }
+  .shift-EMPTY{ background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.35); }
+  tr.weekend td{ background-image: linear-gradient(0deg, var(--c-weekrow), var(--c-weekrow)); }
+  .mini th,.mini td{font-size:12.5px}
+  .mini tbody td{height:56px;min-height:56px}
+  .mini thead th{text-align:left}
+  .mini .k{text-align:left;padding-left:12px;line-height:1.2}
+  .badge{display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:28px;padding:0 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.18);font-weight:950;}
+  .bad{ background: var(--c-badbg); border-color: rgba(255,77,77,0.55); }
+  .good{ background: rgba(42,167,255,0.16); border-color: rgba(42,167,255,0.25); }
+  .footerNote{padding:10px 12px 14px;color:var(--muted);font-size:12px;border-top:1px solid rgba(255,255,255,0.10);background: rgba(255,255,255,0.02);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .count{color:rgba(255,255,255,0.86);font-weight:950}
+  .otWrap{padding:12px}
+  .otCard{background:rgba(0,0,0,0.12);border:1px solid rgba(255,255,255,0.10);border-radius:16px;overflow:hidden;}
+  .otHead{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.10);font-weight:950}
+  .otControls{padding:10px 12px;display:flex; flex-wrap:wrap; gap:10px; align-items:end;border-bottom:1px solid rgba(255,255,255,0.10);background: rgba(255,255,255,0.02);}
+  .otSub{padding:10px 12px;color:var(--muted);font-size:12px;border-bottom:1px solid rgba(255,255,255,0.08)}
+  .otTableWrap{overflow:auto; max-height: calc(100vh - 330px);}
+  .totalCol{ background: var(--c-totalbg); font-weight: 950; }
+  .phCol{ background: var(--c-phbg); font-weight: 950; }
+  .ot table{min-width:860px}
+  .sectionDivider{padding:10px 12px;border-top:1px solid rgba(255,255,255,0.10);border-bottom:1px solid rgba(255,255,255,0.10);font-weight:900;background:rgba(255,255,255,0.03)}
+  .uploadWrap{padding:12px}
+  .callout{padding:12px;border:1px solid rgba(255,255,255,0.10);background: rgba(0,0,0,0.14);border-radius: 14px;color: var(--muted);font-size: 13px;}
+  code{color:rgba(255,255,255,0.86)}
+
+/* === ROW ALIGNMENT FIX === */
+.scrollY table tbody tr{height:56px !important;}
+.scrollY table tbody tr td{height:56px !important;vertical-align:middle;}
+.cellSel,.phSel{height:100% !important;}
+.badge{height:28px;display:flex;align-items:center;justify-content:center;}
+
+
+/* === ON DUTY MATCH PH HEIGHT FIX === */
+#sumTable tbody tr { height: 56px !important; }
+#sumTable tbody td { 
+  height: 56px !important; 
+  min-height: 56px !important;
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+  vertical-align: middle !important;
+  line-height: 1 !important;
+}
+#sumTable .k {
+  height: 56px !important;
+  min-height: 56px !important;
+  display: table-cell !important;
+  vertical-align: middle !important;
+}
+#sumTable .badge {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  padding: 0 10px !important;
+  border-radius: 12px !important;
+}
+#sumTable thead th{
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+
+/* === PERFECT CROSS-TABLE ALIGNMENT === */
+.grid{align-items:start;}
+.pane{display:flex;flex-direction:column;}
+#scrollLeft table,#scrollMid table,#scrollRight table{table-layout:fixed;}
+#scrollLeft thead th,#scrollMid thead th,#scrollRight thead th{
+  height:56px !important;
+  min-height:56px !important;
+  vertical-align:middle !important;
+}
+#tbody tr,#phBody tr,#sumBody tr{height:56px !important;min-height:56px !important;}
+#tbody td,#phBody td,#sumBody td{
+  height:56px !important;
+  min-height:56px !important;
+  padding-top:6px !important;
+  padding-bottom:6px !important;
+  vertical-align:middle !important;
+}
+#phBody td{padding-left:10px !important;padding-right:10px !important;}
+#phBody .phSel{
+  display:block !important;
+  width:100% !important;
+  height:44px !important;
+  min-height:44px !important;
+  margin:0 !important;
+}
+#phBody .phSel.yesVal{
+  background: rgba(26, 209, 255, 0.16) !important;
+  border-color: rgba(26, 209, 255, 0.34) !important;
+  box-shadow: inset 0 0 0 1px rgba(26, 209, 255, 0.08);
+}
+#sumTable .k{min-width:98px !important;}
+#sumTable th,#sumTable td{min-width:58px !important;}
+
+
+  /* On duty sizing fix */
+  .onduty th{height:56px;min-width:90px}
+  .onduty td{height:56px;min-width:90px}
+
+
+/* === SINGLE SCROLLBAR + DATE/DAY FIX === */
+#scrollLeft{overflow-y:auto;overflow-x:auto;scrollbar-gutter:stable;}
+#scrollMid,#scrollRight{overflow:hidden !important;}
+#scrollLeft table{table-layout:fixed;width:max-content;min-width:100%;}
+#scrollLeft col.col-date-fix{width:150px;}
+#scrollLeft col.col-day-fix{width:140px;}
+#scrollLeft col.col-emp-fix{width:112px;}
+#scrollLeft td.stickyL,#scrollLeft th.stickyL{left:0;width:150px;min-width:150px;max-width:150px;}
+#scrollLeft td.stickyL2,#scrollLeft th.stickyL2{left:150px;width:140px;min-width:140px;max-width:140px;}
+#scrollLeft td.stickyL,#scrollLeft td.stickyL2,#scrollLeft th.stickyL,#scrollLeft th.stickyL2{background:rgba(6,12,26,0.98);}
+#scrollLeft table td,#scrollLeft table th{overflow:hidden;text-overflow:ellipsis;}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Shift Schedule</h1></header>
+  <div class="panel">
+    <div class="tabs">
+      <button class="tab active" id="tabSchedule">Schedule</button>
+      <button class="tab" id="tabOvertime">Over time</button>
+      <button class="tab" id="tabUpload">Upload</button>
+    </div>
+    <div class="content active" id="viewSchedule">
+      <div class="controls">
+        <div class="ctrl"><label for="fromDate">From</label><input id="fromDate" type="date" /></div>
+        <div class="ctrl"><label for="toDate">To</label><input id="toDate" type="date" /></div>
+        <div class="ctrl"><label for="windowDays">Quick window</label>
+          <select id="windowDays">
+            <option value="14">14 days</option>
+            <option value="21">21 days</option>
+            <option value="28">28 days</option>
+            <option value="35" selected>35 days</option>
+            <option value="42">42 days</option>
+            <option value="9999">All (will scroll)</option>
+          </select>
+        </div>
+        <div class="ctrl" style="min-width:240px;">
+          <label for="shiftFilter">Shift filter</label>
+          <select id="shiftFilter">
+            <option value="__all__" selected>All shifts</option>
+            <option value="AM T">AM T</option>
+            <option value="PM T">PM T</option>
+            <option value="WEEKEND">AM W / PM W / ON W</option>
+            <option value="H">H</option>
+            <option value="EMPTY">(empty)</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:end;gap:10px;margin-left:auto;">
+          <button class="btn" id="resetBtn">Reset</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="pill"><span class="dot" style="background:var(--c-amt)"></span>AM T (min 2 on weekdays)</span>
+        <span class="pill"><span class="dot" style="background:var(--c-pmt)"></span>PM T (min 2 on weekdays)</span>
+        <span class="pill"><span class="dot" style="background:var(--c-weekend)"></span>Weekend shifts (AM W / PM W / ON W)</span>
+      </div>
+      <div class="grid">
+        <div class="pane">
+          <div class="paneHeader">Schedule (editable)</div>
+          <div class="scrollY" id="scrollLeft">
+            <table><colgroup><col class="col-date-fix"><col class="col-day-fix"><col class="col-emp-fix"><col class="col-emp-fix"><col class="col-emp-fix"><col class="col-emp-fix"><col class="col-emp-fix"><col class="col-emp-fix"><col class="col-emp-fix"></colgroup><thead><tr id="theadRow"></tr></thead><tbody id="tbody"></tbody></table>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="paneHeader">Public Holiday</div>
+          <div class="scrollY" id="scrollMid">
+            <table><thead><tr><th>PH</th></tr></thead><tbody id="phBody"></tbody></table>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="paneHeader">On duty (per day)</div>
+          <div class="scrollY" id="scrollRight">
+            <table class="mini" id="sumTable"><thead><tr><th class="k">Check</th><th>AM T</th><th>PM T</th><th>AM W</th><th>PM W</th></tr></thead><tbody id="sumBody"></tbody></table>
+          </div>
+        </div>
+      </div>
+      <div class="footerNote"><div>Showing <span class="count" id="rowCount">0</span> rows</div><div>Default view opens to the current month</div></div>
+    </div>
+
+    <div class="content" id="viewOvertime">
+      <div class="otWrap">
+        <div class="otCard">
+          <div class="otHead">Over time (Weekend shifts)</div>
+          <div class="otControls">
+            <div class="ctrl"><label for="otMonth">Month</label><input id="otMonth" type="month" /></div>
+            <div class="callout" style="flex:1; min-width:260px;">Shows counts for the selected month and the previous month. Weekend PH=YES moves that day from overtime to PH count.</div>
+          </div>
+          <div class="otSub" id="otSubtitle"></div>
+          <div class="otTableWrap"><table><thead id="otHeadRow"></thead><tbody id="otBody"></tbody></table></div>
+          <div class="footerNote"><div>People shown: DL, NP, AM, VK, TT, KH</div><div>Total column highlighted</div></div>
+          <div class="sectionDivider">PH totals</div>
+          <div class="otTableWrap"><table><thead id="phHeadRow"></thead><tbody id="phMonthBody"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content" id="viewUpload">
+      <div class="uploadWrap">
+        <div class="callout" style="margin-bottom:12px;">Upload a file with columns: <code>Date</code> (YYYY-MM-DD), <code>Day</code>, <code>MG</code>, <code>DL</code>, <code>NP</code>, <code>AM</code>, <code>VK</code>, <code>TT</code>, <code>KH</code>, optional <code>Public Holiday</code> (YES/NO)</div>
+        <div class="controls" style="border-radius:16px;">
+          <div class="ctrl" style="min-width:360px;"><label for="fileInput">Upload</label><input id="fileInput" type="file" accept=".xlsx,.csv" /></div>
+          <div style="display:flex;align-items:end;gap:10px;margin-left:auto;"><button class="btn" id="exportBtn">Export CSV (current data)</button></div>
+        </div>
+        <div class="callout" id="uploadStatus" style="margin-top:12px;">No file uploaded yet.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+let DATA = [{"date": "2025-10-27", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "H", "AM": "AM T", "VK": "OFF", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-10-28", "day": "Tuesday", "MG": "AM", "DL": "PM T", "NP": "PH", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2025-10-29", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "H", "AM": "PM T", "VK": "AM T", "TT": "PM T", "KH": "H", "PH_FLAG": "NO"}, {"date": "2025-10-30", "day": "Thursday", "MG": "AM", "DL": "OFF", "NP": "OFF", "AM": "PM T", "VK": "AM T", "TT": "PM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2025-10-31", "day": "Friday", "MG": "AM", "DL": "S", "NP": "OFF", "AM": "PM T", "VK": "AM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-01", "day": "Saturday", "MG": "", "DL": "AM W", "NP": "ON W", "AM": "", "VK": "", "TT": "PM W", "KH": "", "PH_FLAG": "NO"}, {"date": "2025-11-02", "day": "Sunday", "MG": "", "DL": "AM W", "NP": "ON W", "AM": "", "VK": "PM W", "TT": "", "KH": "", "PH_FLAG": "NO"}, {"date": "2025-11-03", "day": "Monday", "MG": "AM", "DL": "AM T", "NP": "OFF", "AM": "PM T", "VK": "OFF", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-04", "day": "Tuesday", "MG": "AM", "DL": "OFF", "NP": "OFF", "AM": "PM T", "VK": "AM T", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-05", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "OFF", "VK": "PM T", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-06", "day": "Thursday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "PM T", "VK": "Military", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-11-07", "day": "Friday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "PM T", "VK": "AM T", "TT": "OFF", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-11-08", "day": "Saturday", "MG": "", "DL": "PM W", "NP": "AM W", "AM": "", "VK": "", "TT": "", "KH": "ON W", "PH_FLAG": "NO"}, {"date": "2025-11-09", "day": "Sunday", "MG": "", "DL": "", "NP": "AM W", "AM": "PM W", "VK": "", "TT": "", "KH": "ON W", "PH_FLAG": "NO"}, {"date": "2025-11-10", "day": "Monday", "MG": "AM", "DL": "OFF", "NP": "S", "AM": "PM T", "VK": "AM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-11-11", "day": "Tuesday", "MG": "AM", "DL": "PM T", "NP": "OFF", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-11-12", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "H", "AM": "AM T", "VK": "AM T", "TT": "PM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-13", "day": "Thursday", "MG": "AM", "DL": "S", "NP": "H", "AM": "PM T", "VK": "AM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-14", "day": "Friday", "MG": "AM", "DL": "AM T", "NP": "H", "AM": "PM T", "VK": "OFF", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-15", "day": "Saturday", "MG": "", "DL": "AM W", "NP": "", "AM": "", "VK": "PM W", "TT": "ON W", "KH": "", "PH_FLAG": "NO"}, {"date": "2025-11-16", "day": "Sunday", "MG": "", "DL": "", "NP": "", "AM": "PM W", "VK": "", "TT": "ON W", "KH": "AM W", "PH_FLAG": "NO"}, {"date": "2025-11-17", "day": "Monday", "MG": "AM", "DL": "AM T", "NP": "H", "AM": "PM T", "VK": "H", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-18", "day": "Tuesday", "MG": "AM", "DL": "AM T", "NP": "H", "AM": "PM T", "VK": "H", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-19", "day": "Wednesday", "MG": "AM", "DL": "AM T", "NP": "OFF", "AM": "PM T", "VK": "H", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-20", "day": "Thursday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "OFF", "VK": "H", "TT": "PM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-21", "day": "Friday", "MG": "HH", "DL": "AM T", "NP": "AM T", "AM": "OFF", "VK": "H", "TT": "PM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-22", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "AM W", "AM": "ON W", "VK": "OFF", "TT": "PM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-11-23", "day": "Sunday", "MG": "", "DL": "AM W", "NP": "OFF", "AM": "ON W", "VK": "OFF", "TT": "PM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-11-24", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "H", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-11-25", "day": "Tuesday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "H", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-26", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "H", "TT": "H", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-27", "day": "Thursday", "MG": "AM", "DL": "AM T", "NP": "OFF", "AM": "PM T", "VK": "OFF", "TT": "H", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-28", "day": "Friday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "OFF", "TT": "H", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-11-29", "day": "Saturday", "MG": "", "DL": "AM W", "NP": "", "AM": "", "VK": "ON W", "TT": "", "KH": "PM W", "PH_FLAG": "NO"}, {"date": "2025-11-30", "day": "Sunday", "MG": "", "DL": "PM W", "NP": "", "AM": "AM W", "VK": "ON W", "TT": "", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-01", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "PM T", "AM": "AM T", "VK": "OFF", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2025-12-02", "day": "Tuesday", "MG": "AM", "DL": "H", "NP": "PM T", "AM": "AM T", "VK": "OFF", "TT": "AM T", "KH": "CYSEC", "PH_FLAG": "NO"}, {"date": "2025-12-03", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "PM T", "AM": "PM T", "VK": "AM T", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-04", "day": "Thursday", "MG": "AM", "DL": "OFF", "NP": "OFF", "AM": "PM T", "VK": "AM T", "TT": "PM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2025-12-05", "day": "Friday", "MG": "AM", "DL": "H", "NP": "OFF", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-12-06", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "ON W", "AM": "OFF", "VK": "AM W", "TT": "PM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-07", "day": "Sunday", "MG": "", "DL": "AM W", "NP": "ON W", "AM": "PM W", "VK": "OFF", "TT": "OFF", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-08", "day": "Monday", "MG": "AM", "DL": "AM T", "NP": "OFF", "AM": "PM T", "VK": "OFF", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-12-09", "day": "Tuesday", "MG": "AM", "DL": "OFF", "NP": "OFF", "AM": "PM T", "VK": "AM T", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-12-10", "day": "Wednesday", "MG": "AM", "DL": "AM T", "NP": "AM T", "AM": "OFF", "VK": "PM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-12-11", "day": "Thursday", "MG": "AM", "DL": "PM T", "NP": "PM T", "AM": "AM T", "VK": "OFF", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-12", "day": "Friday", "MG": "AM", "DL": "PM T", "NP": "OFF", "AM": "PM T", "VK": "AM T", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-13", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "OFF", "VK": "PM W", "TT": "AM W", "KH": "ON W", "PH_FLAG": "NO"}, {"date": "2025-12-14", "day": "Sunday", "MG": "", "DL": "AM W", "NP": "OFF", "AM": "PM W", "VK": "OFF", "TT": "OFF", "KH": "ON W", "PH_FLAG": "NO"}, {"date": "2025-12-15", "day": "Monday", "MG": "AM", "DL": "AM T", "NP": "OFF", "AM": "PM T", "VK": "AM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-16", "day": "Tuesday", "MG": "AM", "DL": "AM T", "NP": "H", "AM": "OFF", "VK": "PM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-17", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "PM T", "AM": "AM T", "VK": "OFF", "TT": "PM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2025-12-18", "day": "Thursday", "MG": "AM", "DL": "OFF", "NP": "PM T", "AM": "AM T", "VK": "PM T", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2025-12-19", "day": "Friday", "MG": "AM", "DL": "H", "NP": "PM T", "AM": "AM T", "VK": "PM T", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2025-12-20", "day": "Saturday", "MG": "", "DL": "AM W", "NP": "OFF", "AM": "OFF", "VK": "PM W", "TT": "ON W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-21", "day": "Sunday", "MG": "", "DL": "PM W", "NP": "OFF", "AM": "OFF", "VK": "OFF", "TT": "ON W", "KH": "AM W", "PH_FLAG": "NO"}, {"date": "2025-12-22", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "H", "VK": "OFF", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2025-12-23", "day": "Tuesday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "H", "VK": "PM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-12-24", "day": "Wednesday", "MG": "HH", "DL": "H", "NP": "AM T", "AM": "H", "VK": "PM T", "TT": "H", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-12-25", "day": "Thursday", "MG": "PH", "DL": "AM T", "NP": "AM T", "AM": "OFF", "VK": "PM T", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2025-12-26", "day": "Friday", "MG": "PH", "DL": "AM T", "NP": "PM T", "AM": "OFF", "VK": "PM T", "TT": "AM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2025-12-27", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "PM W", "AM": "ON W", "VK": "OFF", "TT": "AM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-28", "day": "Sunday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "ON W", "VK": "AM W", "TT": "PM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-29", "day": "Monday", "MG": "H", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "AM T", "TT": "OFF", "KH": "H", "PH_FLAG": "NO"}, {"date": "2025-12-30", "day": "Tuesday", "MG": "H", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2025-12-31", "day": "Wednesday", "MG": "H", "DL": "OFF", "NP": "OFF", "AM": "H", "VK": "PM T", "TT": "AM T", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-01", "day": "Thursday", "MG": "PH", "DL": "OFF", "NP": "AM T", "AM": "AM T", "VK": "PM T", "TT": "PM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-01-02", "day": "Friday", "MG": "H", "DL": "AM T", "NP": "OFF", "AM": "AM T", "VK": "PM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-01-03", "day": "Saturday", "MG": "", "DL": "AM W", "NP": "ON W", "AM": "OFF", "VK": "OFF", "TT": "OFF", "KH": "PM W", "PH_FLAG": "NO"}, {"date": "2026-01-04", "day": "Sunday", "MG": "", "DL": "PM W", "NP": "ON W", "AM": "AM W", "VK": "OFF", "TT": "OFF", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-01-05", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "OFF", "AM": "AM T", "VK": "AM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-01-06", "day": "Tuesday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-01-07", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "OFF", "TT": "PM T", "KH": "SL", "PH_FLAG": "NO"}, {"date": "2026-01-08", "day": "Thursday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "PM T", "TT": "OFF", "KH": "SL", "PH_FLAG": "NO"}, {"date": "2026-01-09", "day": "Friday", "MG": "AM", "DL": "S", "NP": "AM T", "AM": "OFF", "VK": "PM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-01-10", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "AM W", "VK": "PM W", "TT": "ON W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-01-11", "day": "Sunday", "MG": "", "DL": "AM W", "NP": "PM W", "AM": "OFF", "VK": "OFF", "TT": "ON W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-01-12", "day": "Monday", "MG": "AM", "DL": "AM T", "NP": "OFF", "AM": "PM T", "VK": "AM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-01-13", "day": "Tuesday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "AM T", "TT": "OFF", "KH": "CYSEC/PM", "PH_FLAG": "NO"}, {"date": "2026-01-14", "day": "Wednesday", "MG": "AM", "DL": "H", "NP": "PM T", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-15", "day": "Thursday", "MG": "AM", "DL": "H", "NP": "PM T", "AM": "AM T", "VK": "OFF", "TT": "OFF", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-16", "day": "Friday", "MG": "AM", "DL": "H", "NP": "PM T", "AM": "PM T", "VK": "OFF", "TT": "AM T", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-17", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "PM W", "VK": "ON W", "TT": "AM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-01-18", "day": "Sunday", "MG": "", "DL": "OFF", "NP": "PM W", "AM": "OFF", "VK": "ON W", "TT": "AM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-01-19", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "AM T", "VK": "OFF", "TT": "OFF", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-20", "day": "Tuesday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-21", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "OFF", "AM": "AM T", "VK": "PM T", "TT": "PM T", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-22", "day": "Thursday", "MG": "AM", "DL": "OFF", "NP": "PM T", "AM": "AM T", "VK": "OFF", "TT": "PM T", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-23", "day": "Friday", "MG": "AM", "DL": "AM T", "NP": "PM T", "AM": "AM T", "VK": "OFF", "TT": "PM T", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-24", "day": "Saturday", "MG": "", "DL": "AM W", "NP": "PM W", "AM": "OFF", "VK": "ON W", "TT": "OFF", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-01-25", "day": "Sunday", "MG": "", "DL": "PM W", "NP": "OFF", "AM": "OFF", "VK": "ON W", "TT": "AM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-01-26", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "AM T", "VK": "OFF", "TT": "PM T", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-27", "day": "Tuesday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "OFF", "TT": "PM T", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-28", "day": "Wednesday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "PM T", "VK": "AM T", "TT": "OFF", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-29", "day": "Thursday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "H", "PH_FLAG": "NO"}, {"date": "2026-01-30", "day": "Friday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-01-31", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "ON W", "VK": "AM W", "TT": "PM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-02-01", "day": "Sunday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "ON W", "VK": "PM W", "TT": "OFF", "KH": "AM W", "PH_FLAG": "NO"}, {"date": "2026-02-02", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "OFF", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-02-03", "day": "Tuesday", "MG": "AM", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "PM T", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-02-04", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "PM T", "AM": "AM T", "VK": "PM T", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-02-05", "day": "Thursday", "MG": "AM", "DL": "H", "NP": "OFF", "AM": "AM T", "VK": "PM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-02-06", "day": "Friday", "MG": "AM", "DL": "OFF", "NP": "OFF", "AM": "AM T", "VK": "PM T", "TT": "H", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-02-07", "day": "Saturday", "MG": "", "DL": "AM W", "NP": "ON W", "AM": "OFF", "VK": "OFF", "TT": "OFF", "KH": "PM W", "PH_FLAG": "NO"}, {"date": "2026-02-08", "day": "Sunday", "MG": "", "DL": "PM W", "NP": "ON W", "AM": "AM W", "VK": "OFF", "TT": "OFF", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-02-09", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "OFF", "AM": "AM T", "VK": "PM T", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-02-10", "day": "Tuesday", "MG": "AM", "DL": "PM T", "NP": "OFF", "AM": "OFF", "VK": "PM T", "TT": "AM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-02-11", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "PM T", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-02-12", "day": "Thursday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "OFF", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-02-13", "day": "Friday", "MG": "AM", "DL": "AM T", "NP": "AM T", "AM": "OFF", "VK": "OFF", "TT": "PM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-02-14", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "AM W", "VK": "ON W", "TT": "PM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-02-15", "day": "Sunday", "MG": "", "DL": "AM W", "NP": "PM W", "AM": "OFF", "VK": "ON W", "TT": "OFF", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-02-16", "day": "Monday", "MG": "AM", "DL": "AM T", "NP": "OFF", "AM": "PM T", "VK": "OFF", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-02-17", "day": "Tuesday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "OFF", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-02-18", "day": "Wednesday", "MG": "AM", "DL": "AM T", "NP": "PM T", "AM": "OFF", "VK": "AM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-02-19", "day": "Thursday", "MG": "AM", "DL": "PM T", "NP": "H", "AM": "AM T", "VK": "OFF", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-02-20", "day": "Friday", "MG": "AM", "DL": "PM T", "NP": "OFF", "AM": "PM T", "VK": "AM T", "TT": "H", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-02-21", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "PM W", "AM": "OFF", "VK": "AM W", "TT": "OFF", "KH": "ON W", "PH_FLAG": "NO"}, {"date": "2026-02-22", "day": "Sunday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "PM W", "VK": "AM W", "TT": "OFF", "KH": "ON W", "PH_FLAG": "NO"}, {"date": "2026-02-23", "day": "Monday", "MG": "AM", "DL": "AM T", "NP": "AM T", "AM": "PM T", "VK": "PM T", "TT": "PM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-02-24", "day": "Tuesday", "MG": "AM", "DL": "AM T", "NP": "H", "AM": "OFF", "VK": "PM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-02-25", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "OFF", "AM": "AM T", "VK": "PM T", "TT": "H", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-02-26", "day": "Thursday", "MG": "AM", "DL": "OFF", "NP": "H", "AM": "PM T", "VK": "PM T", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-02-27", "day": "Friday", "MG": "AM", "DL": "H", "NP": "H", "AM": "PM T", "VK": "PM T", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-02-28", "day": "Saturday", "MG": "", "DL": "AM W", "NP": "OFF", "AM": "OFF", "VK": "OFF", "TT": "ON W", "KH": "PM W", "PH_FLAG": "NO"}, {"date": "2026-03-01", "day": "Sunday", "MG": "", "DL": "PM W", "NP": "OFF", "AM": "AM W", "VK": "OFF", "TT": "ON W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-02", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "OFF", "AM": "PM T", "VK": "AM T", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-03-03", "day": "Tuesday", "MG": "AM", "DL": "OFF", "NP": "PM T", "AM": "PM T", "VK": "AM T", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-03-04", "day": "Wednesday", "MG": "AM", "DL": "H", "NP": "PM T", "AM": "PM T", "VK": "OFF", "TT": "AM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-03-05", "day": "Thursday", "MG": "AM", "DL": "H", "NP": "PM T", "AM": "OFF", "VK": "AM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-03-06", "day": "Friday", "MG": "AM", "DL": "H", "NP": "PM T", "AM": "OFF", "VK": "PM T", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-07", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "ON W", "VK": "PM W", "TT": "AM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-08", "day": "Sunday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "ON W", "VK": "OFF", "TT": "PM W", "KH": "AM W", "PH_FLAG": "NO"}, {"date": "2026-03-09", "day": "Monday", "MG": "H", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "AM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-03-10", "day": "Tuesday", "MG": "H", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-11", "day": "Wednesday", "MG": "H", "DL": "OFF", "NP": "PM T", "AM": "AM T", "VK": "AM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-12", "day": "Thursday", "MG": "H", "DL": "AM T", "NP": "OFF", "AM": "AM T", "VK": "OFF", "TT": "PM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-03-13", "day": "Friday", "MG": "H", "DL": "OFF", "NP": "OFF", "AM": "AM T", "VK": "AM T", "TT": "PM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-03-14", "day": "Saturday", "MG": "", "DL": "AM W", "NP": "ON W", "AM": "OFF", "VK": "OFF", "TT": "OFF", "KH": "PM W", "PH_FLAG": "NO"}, {"date": "2026-03-15", "day": "Sunday", "MG": "", "DL": "PM W", "NP": "ON W", "AM": "AM W", "VK": "OFF", "TT": "OFF", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-16", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "OFF", "AM": "AM T", "VK": "PM T", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-17", "day": "Tuesday", "MG": "AM", "DL": "PM T", "NP": "OFF", "AM": "OFF", "VK": "PM T", "TT": "AM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-03-18", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "PM T", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-03-19", "day": "Thursday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "OFF", "TT": "PM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-03-20", "day": "Friday", "MG": "AM", "DL": "AM T", "NP": "AM T", "AM": "OFF", "VK": "OFF", "TT": "PM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-03-21", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "AM W", "VK": "ON W", "TT": "PM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-22", "day": "Sunday", "MG": "", "DL": "AM W", "NP": "PM W", "AM": "OFF", "VK": "ON W", "TT": "OFF", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-23", "day": "Monday", "MG": "AM", "DL": "AM T", "NP": "OFF", "AM": "PM T", "VK": "OFF", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-03-24", "day": "Tuesday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "H", "VK": "OFF", "TT": "AM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-03-25", "day": "Wednesday", "MG": "AM", "DL": "AM T", "NP": "PM T", "AM": "OFF", "VK": "AM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-03-26", "day": "Thursday", "MG": "AM", "DL": "PM T", "NP": "PM T", "AM": "H", "VK": "AM T", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-27", "day": "Friday", "MG": "AM", "DL": "PM T", "NP": "OFF", "AM": "H", "VK": "AM T", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-28", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "PM W", "AM": "OFF", "VK": "AM W", "TT": "OFF", "KH": "ON W", "PH_FLAG": "NO"}, {"date": "2026-03-29", "day": "Sunday", "MG": "", "DL": "OFF", "NP": "PM W", "AM": "OFF", "VK": "AM W", "TT": "OFF", "KH": "ON W", "PH_FLAG": "NO"}, {"date": "2026-03-30", "day": "Monday", "MG": "AM", "DL": "AM T", "NP": "PM T", "AM": "H", "VK": "OFF", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-03-31", "day": "Tuesday", "MG": "AM", "DL": "AM T", "NP": "PM T", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-04-01", "day": "Wednesday", "MG": "PH", "DL": "PM T", "NP": "OFF", "AM": "PH", "VK": "AM T", "TT": "PM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-04-02", "day": "Thursday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "PM T", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-04-03", "day": "Friday", "MG": "AM", "DL": "OFF", "NP": "AM T", "AM": "PM T", "VK": "PM T", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-04-04", "day": "Saturday", "MG": "", "DL": "AM W", "NP": "PM W", "AM": "OFF", "VK": "OFF", "TT": "ON W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-04-05", "day": "Sunday", "MG": "", "DL": "PM W", "NP": "OFF", "AM": "OFF", "VK": "OFF", "TT": "ON W", "KH": "AM W", "PH_FLAG": "NO"}, {"date": "2026-04-06", "day": "Monday", "MG": "AM", "DL": "PM T", "NP": "OFF", "AM": "PM T", "VK": "H", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-04-07", "day": "Tuesday", "MG": "AM", "DL": "OFF", "NP": "PM T", "AM": "PM T", "VK": "H", "TT": "OFF", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-04-08", "day": "Wednesday", "MG": "AM", "DL": "AM T", "NP": "PM T", "AM": "PM T", "VK": "OFF", "TT": "AM T", "KH": "AM T", "PH_FLAG": "NO"}, {"date": "2026-04-09", "day": "Thursday", "MG": "AM", "DL": "AM T", "NP": "PM T", "AM": "OFF", "VK": "H", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-04-10", "day": "Friday", "MG": "PH", "DL": "AM T", "NP": "PM T", "AM": "OFF", "VK": "PM T", "TT": "AM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-04-11", "day": "Saturday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "ON W", "VK": "PM W", "TT": "AM W", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-04-12", "day": "Sunday", "MG": "", "DL": "OFF", "NP": "OFF", "AM": "ON W", "VK": "OFF", "TT": "PM W", "KH": "AM W", "PH_FLAG": "NO"}, {"date": "2026-04-13", "day": "Monday", "MG": "PH", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "AM T", "TT": "OFF", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-04-14", "day": "Tuesday", "MG": "PH", "DL": "PM T", "NP": "AM T", "AM": "OFF", "VK": "AM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-04-15", "day": "Wednesday", "MG": "AM", "DL": "OFF", "NP": "PM T", "AM": "AM T", "VK": "AM T", "TT": "PM T", "KH": "OFF", "PH_FLAG": "NO"}, {"date": "2026-04-16", "day": "Thursday", "MG": "AM", "DL": "AM T", "NP": "OFF", "AM": "AM T", "VK": "OFF", "TT": "PM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-04-17", "day": "Friday", "MG": "AM", "DL": "OFF", "NP": "OFF", "AM": "AM T", "VK": "H", "TT": "PM T", "KH": "PM T", "PH_FLAG": "NO"}, {"date": "2026-04-18", "day": "Saturday", "MG": "", "DL": "AM W", "NP": "ON W", "AM": "OFF", "VK": "OFF", "TT": "OFF", "KH": "PM W", "PH_FLAG": "NO"}, {"date": "2026-04-19", "day": "Sunday", "MG": "", "DL": "PM W", "NP": "ON W", "AM": "AM W", "VK": "OFF", "TT": "OFF", "KH": "OFF", "PH_FLAG": "NO"}];
+const EMPLOYEES = ["MG", "DL", "NP", "AM", "VK", "TT", "KH"];
+const SHIFT_OPTIONS = ["", "OFF", "AM T","PM T","AM W","PM W","ON W","AM","PH","S","H","HH","A"];
+
+const fromDateEl = document.getElementById('fromDate');
+const toDateEl = document.getElementById('toDate');
+const windowDaysEl = document.getElementById('windowDays');
+const shiftFilterEl = document.getElementById('shiftFilter');
+const resetBtn = document.getElementById('resetBtn');
+const theadRow = document.getElementById('theadRow');
+const tbody = document.getElementById('tbody');
+const phBody = document.getElementById('phBody');
+const sumBody = document.getElementById('sumBody');
+const rowCountEl = document.getElementById('rowCount');
+const scrollLeft = document.getElementById('scrollLeft');
+const scrollMid = document.getElementById('scrollMid');
+const scrollRight = document.getElementById('scrollRight');
+const tabSchedule = document.getElementById('tabSchedule');
+const tabOvertime = document.getElementById('tabOvertime');
+const tabUpload = document.getElementById('tabUpload');
+const viewSchedule = document.getElementById('viewSchedule');
+const viewOvertime = document.getElementById('viewOvertime');
+const viewUpload = document.getElementById('viewUpload');
+const otMonthEl = document.getElementById('otMonth');
+const otHeadRow = document.getElementById('otHeadRow');
+const otBody = document.getElementById('otBody');
+const otSubtitle = document.getElementById('otSubtitle');
+const phHeadRow = document.getElementById('phHeadRow');
+const phMonthBody = document.getElementById('phMonthBody');
+const fileInput = document.getElementById('fileInput');
+const uploadStatus = document.getElementById('uploadStatus');
+const exportBtn = document.getElementById('exportBtn');
+
+function todayParts() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  const d = String(now.getDate()).padStart(2,'0');
+  return {y, m, d, today:`${y}-${m}-${d}`, ym:`${y}-${m}`};
+}
+function currentMonthBounds() {
+  const t = todayParts();
+  const start = `${t.y}-${t.m}-01`;
+  const endDate = new Date(t.y, Number(t.m), 0);
+  const end = `${t.y}-${t.m}-${String(endDate.getDate()).padStart(2,'0')}`;
+  return {start, end};
+}
+function parseISO(d) {
+  const [y,m,dd] = d.split('-').map(Number);
+  return new Date(Date.UTC(y, m-1, dd));
+}
+function isWeekendDayName(day) { return day === 'Saturday' || day === 'Sunday'; }
+function isWeekendShift(v) { return v === 'AM W' || v === 'PM W' || v === 'ON W'; }
+function classForShift(v) {
+  if (!v) return 'shift-EMPTY';
+  if (v === 'AM') return 'shift-AM';
+  if (v === 'AM T') return 'shift-AMT';
+  if (v === 'PM T') return 'shift-PMT';
+  if (v === 'OFF') return 'shift-OFF';
+  if (isWeekendShift(v)) return 'shift-WE';
+  if (v === 'H' || v === 'PH' || v === 'S' || v === 'HH' || v === 'A') return 'shift-H';
+  return '';
+}
+function passesShiftFilter(row, filter) {
+  if (filter === '__all__') return true;
+  for (const e of EMPLOYEES) {
+    const v = (row[e] || '').trim();
+    if (filter === 'WEEKEND' && isWeekendShift(v)) return true;
+    if (filter === 'EMPTY' && !v) return true;
+    if (v === filter) return true;
+  }
+  return false;
+}
+function countShifts(row) {
+  let cAMT=0, cPMT=0, cAMW=0, cPMW=0, cONW=0;
+  for (const e of EMPLOYEES) {
+    const v = (row[e] || '').trim();
+    if (v === 'AM T') cAMT++;
+    if (v === 'PM T') cPMT++;
+    if (v === 'AM W') cAMW++;
+    if (v === 'PM W') cPMW++;
+    if (v === 'ON W') cONW++;
+  }
+  return {cAMT,cPMT,cAMW,cPMW,cONW};
+}
+function badge(n, ok) {
+  const span = document.createElement('span');
+  span.className = 'badge ' + (ok ? 'good' : 'bad');
+  span.textContent = String(n);
+  return span;
+}
+function buildHeader() {
+  theadRow.innerHTML = '';
+  const thDate = document.createElement('th');
+  thDate.textContent = 'Date';
+  thDate.className = 'stickyL col-date';
+  theadRow.appendChild(thDate);
+  const thDay = document.createElement('th');
+  thDay.textContent = 'Day';
+  thDay.className = 'stickyL2 col-day';
+  theadRow.appendChild(thDay);
+  for (const e of EMPLOYEES) {
+    const th = document.createElement('th');
+    th.textContent = e;
+    theadRow.appendChild(th);
+  }
+}
+function buildShiftSelect(value, rowIdx, emp) {
+  const sel = document.createElement('select');
+  sel.className = 'cellSel';
+  sel.dataset.rowIdx = String(rowIdx);
+  sel.dataset.emp = emp;
+  for (const opt of SHIFT_OPTIONS) {
+    const o = document.createElement('option');
+    o.value = opt; o.textContent = opt || '';
+    if (opt === value) o.selected = true;
+    sel.appendChild(o);
+  }
+  sel.addEventListener('change', (ev) => {
+    const idx = Number(ev.target.dataset.rowIdx);
+    const employee = ev.target.dataset.emp;
+    const newVal = ev.target.value;
+    DATA[idx][employee] = newVal;
+    ev.target.closest('td').className = classForShift(newVal);
+    updateSummaryForRow(idx);
+    renderOvertime();
+  });
+  return sel;
+}
+function buildPHSelect(value, rowIdx) {
+  const sel = document.createElement('select');
+  sel.className = 'phSel';
+  sel.dataset.rowIdx = String(rowIdx);
+  const applyPHStyle = () => sel.classList.toggle('yesVal', (sel.value || 'NO') === 'YES');
+  for (const opt of ['NO','YES']) {
+    const o = document.createElement('option');
+    o.value = opt; o.textContent = opt;
+    if ((value || 'NO') === opt) o.selected = true;
+    sel.appendChild(o);
+  }
+  applyPHStyle();
+  sel.addEventListener('change', (ev) => {
+    const idx = Number(ev.target.dataset.rowIdx);
+    DATA[idx].PH_FLAG = ev.target.value || 'NO';
+    applyPHStyle();
+    renderOvertime();
+  });
+  return sel;
+}
+function renderSchedule() {
+  const leftTop = scrollLeft.scrollTop;
+  DATA.sort((a,b)=>a.date.localeCompare(b.date));
+  const from = parseISO(fromDateEl.value);
+  const to = parseISO(toDateEl.value);
+  const filter = shiftFilterEl.value;
+  const filteredIdx = [];
+  for (let i=0;i<DATA.length;i++) {
+    const r = DATA[i];
+    if (!r.date) continue;
+    const d = parseISO(r.date);
+    if (d < from || d > to) continue;
+    if (!passesShiftFilter(r, filter)) continue;
+    filteredIdx.push(i);
+  }
+  tbody.innerHTML = '';
+  phBody.innerHTML = '';
+  sumBody.innerHTML = '';
+  for (const idx of filteredIdx) {
+    const r = DATA[idx];
+    const isWeekendRow = isWeekendDayName((r.day||'').trim());
+    const tr = document.createElement('tr'); 
+    if (isWeekendRow) tr.classList.add('weekend');
+    const tdDate = document.createElement('td');
+    tdDate.textContent = r.date;
+    tdDate.className = 'stickyL col-date';
+    tr.appendChild(tdDate);
+    const tdDay = document.createElement('td');
+    tdDay.textContent = r.day || '';
+    tdDay.className = 'stickyL2 col-day';
+    tr.appendChild(tdDay);
+    for (const e of EMPLOYEES) {
+      const v = (r[e] || '').trim();
+      const td = document.createElement('td');
+      td.className = classForShift(v);
+      td.appendChild(buildShiftSelect(v, idx, e));
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+
+    const trPH = document.createElement('tr'); trPH.style.height = "56px";
+    if (isWeekendRow) trPH.classList.add('weekend');
+    const tdPH = document.createElement('td');
+    tdPH.appendChild(buildPHSelect(r.PH_FLAG || 'NO', idx));
+    trPH.appendChild(tdPH);
+    phBody.appendChild(trPH);
+
+    const trS = document.createElement('tr'); trS.style.height = "56px";
+    trS.dataset.rowIdx = String(idx);
+    if (isWeekendRow) trS.classList.add('weekend');
+    const tdK = document.createElement('td');
+    tdK.className = 'k';
+    tdK.textContent = isWeekendRow ? 'Weekend' : 'Weekday';
+    trS.appendChild(tdK);
+    for (let i=0;i<4;i++) {
+      const td = document.createElement('td');
+      td.appendChild(badge(0,true));
+      trS.appendChild(td);
+    }
+    sumBody.appendChild(trS);
+    updateSummaryForRow(idx);
+  }
+  rowCountEl.textContent = String(filteredIdx.length);
+  scrollLeft.scrollTop = leftTop; syncPanelsFromLeft();
+  renderOvertime();
+}
+function updateSummaryForRow(idx) {
+  const r = DATA[idx];
+  const isWeekendRow = isWeekendDayName((r.day||'').trim());
+  const counts = countShifts(r);
+  const trS = sumBody.querySelector(`tr[data-row-idx="${idx}"]`);
+  if (!trS) return;
+  const okAMT = isWeekendRow ? true : (counts.cAMT >= 2);
+  const okPMT = isWeekendRow ? true : (counts.cPMT >= 2);
+  const okAMW = isWeekendRow ? (counts.cAMW === 1) : true;
+  const okPMW = isWeekendRow ? (counts.cPMW === 1) : true;
+  const tds = trS.querySelectorAll('td');
+  tds[1].innerHTML = ''; tds[1].appendChild(badge(counts.cAMT, okAMT));
+  tds[2].innerHTML = ''; tds[2].appendChild(badge(counts.cPMT, okPMT));
+  tds[3].innerHTML = ''; tds[3].appendChild(badge(counts.cAMW, okAMW));
+  tds[4].innerHTML = ''; tds[4].appendChild(badge(counts.cPMW, okPMW));
+}
+function setDefaultCurrentMonthView() {
+  const bounds = currentMonthBounds();
+  fromDateEl.value = bounds.start;
+  toDateEl.value = bounds.end;
+  windowDaysEl.value = '35';
+  shiftFilterEl.value = '__all__';
+  otMonthEl.value = todayParts().ym;
+}
+function resetAll() {
+  DATA.sort((a,b)=>a.date.localeCompare(b.date));
+  setDefaultCurrentMonthView();
+  renderSchedule();
+}
+let syncing = false;
+function syncPanelsFromLeft() {
+  if (syncing) return;
+  syncing = true;
+  const top = scrollLeft.scrollTop;
+  scrollMid.scrollTop = top;
+  scrollRight.scrollTop = top;
+  window.requestAnimationFrame(() => syncing = false);
+}
+scrollLeft.addEventListener('scroll', syncPanelsFromLeft);
+for (const el of [scrollMid, scrollRight]) {
+  el.addEventListener('wheel', (ev) => {
+    ev.preventDefault();
+    scrollLeft.scrollTop += ev.deltaY;
+    syncPanelsFromLeft();
+  }, { passive:false });
+  el.addEventListener('touchmove', () => syncPanelsFromLeft(), { passive:true });
+}
+windowDaysEl.addEventListener('change', () => {
+  const w = Number(windowDaysEl.value);
+  const start = parseISO(fromDateEl.value);
+  const end = new Date(start.getTime() + (w-1) * 86400000);
+  toDateEl.value = end.toISOString().slice(0,10);
+  renderSchedule();
+});
+fromDateEl.addEventListener('change', () => {
+  const w = Number(windowDaysEl.value);
+  const start = parseISO(fromDateEl.value);
+  const end = new Date(start.getTime() + (w-1) * 86400000);
+  toDateEl.value = end.toISOString().slice(0,10);
+  renderSchedule();
+});
+toDateEl.addEventListener('change', renderSchedule);
+shiftFilterEl.addEventListener('change', renderSchedule);
+resetBtn.addEventListener('click', resetAll);
+
+function activateTab(which) {
+  for (const [tab, view, key] of [[tabSchedule, viewSchedule, 'schedule'],[tabOvertime, viewOvertime, 'overtime'],[tabUpload, viewUpload, 'upload']]) {
+    const active = key === which;
+    tab.classList.toggle('active', active);
+    view.classList.toggle('active', active);
+  }
+  if (which === 'overtime') renderOvertime();
+}
+tabSchedule.addEventListener('click', () => activateTab('schedule'));
+tabOvertime.addEventListener('click', () => activateTab('overtime'));
+tabUpload.addEventListener('click', () => activateTab('upload'));
+
+const OT_PEOPLE = ['DL','NP','AM','VK','TT','KH'];
+function monthName(ym) {
+  const [y,m] = ym.split('-').map(Number);
+  const d = new Date(Date.UTC(y, m-1, 1));
+  return d.toLocaleString(undefined, { month:'long', year:'numeric', timeZone:'UTC' });
+}
+function prevMonth(ym) {
+  const [y,m] = ym.split('-').map(Number);
+  const d = new Date(Date.UTC(y, m-1, 1));
+  d.setUTCMonth(d.getUTCMonth()-1);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;
+}
+function emptyAggMonth() {
+  const out = {};
+  for (const p of OT_PEOPLE) out[p] = {'AM W':0,'PM W':0,'ON W':0,'PH':0};
+  return out;
+}
+function buildTwoMonthAggregates(curYM, prevYM) {
+  const agg = { [prevYM]: emptyAggMonth(), [curYM]: emptyAggMonth() };
+  for (const r of DATA) {
+    if (!r.date) continue;
+    const ym = r.date.slice(0,7);
+    if (ym !== prevYM && ym !== curYM) continue;
+    const weekend = isWeekendDayName((r.day||'').trim());
+    const phYes = (r.PH_FLAG || 'NO') === 'YES';
+    for (const p of OT_PEOPLE) {
+      const v = (r[p] || '').trim();
+      const workingWeekendShift = (v === 'AM W' || v === 'PM W' || v === 'ON W');
+      if (phYes && !weekend) {
+        agg[ym][p]['PH'] += 1;
+      } else if (phYes && weekend && workingWeekendShift) {
+        agg[ym][p]['PH'] += 1;
+      } else if (workingWeekendShift) {
+        agg[ym][p][v] += 1;
+      }
+    }
+  }
+  return agg;
+}
+function renderOvertime() {
+  const curYM = otMonthEl.value || todayParts().ym;
+  const prevYM = prevMonth(curYM);
+  otSubtitle.textContent = `Selected: ${monthName(curYM)} • Previous: ${monthName(prevYM)}`;
+  const agg = buildTwoMonthAggregates(curYM, prevYM);
+
+  otHeadRow.innerHTML = '';
+  const tr1 = document.createElement('tr');
+  const thP = document.createElement('th');
+  thP.textContent = 'Person'; thP.style.textAlign='left'; thP.style.paddingLeft='12px';
+  tr1.appendChild(thP);
+  for (const ym of [prevYM, curYM]) {
+    const th = document.createElement('th'); th.colSpan = 4; th.textContent = monthName(ym); tr1.appendChild(th);
+  }
+  otHeadRow.appendChild(tr1);
+
+  const tr2 = document.createElement('tr');
+  const thB = document.createElement('th'); thB.textContent = ''; tr2.appendChild(thB);
+  for (let i=0;i<2;i++) for (const k of ['AM W','PM W','ON W','Total']) {
+    const th = document.createElement('th'); th.textContent = k; tr2.appendChild(th);
+  }
+  otHeadRow.appendChild(tr2);
+
+  otBody.innerHTML = '';
+  for (const p of OT_PEOPLE) {
+    const tr = document.createElement('tr');
+    const tdP = document.createElement('td');
+    tdP.textContent = p; tdP.style.textAlign='left'; tdP.style.paddingLeft='12px'; tr.appendChild(tdP);
+    for (const ym of [prevYM, curYM]) {
+      const c = agg[ym][p];
+      const total = c['AM W'] + c['PM W'] + c['ON W'];
+      for (const k of ['AM W','PM W','ON W']) {
+        const td = document.createElement('td'); td.textContent = String(c[k]); tr.appendChild(td);
+      }
+      const tdT = document.createElement('td'); tdT.textContent = String(total); tdT.className = 'totalCol'; tr.appendChild(tdT);
+    }
+    otBody.appendChild(tr);
+  }
+
+  phHeadRow.innerHTML = '';
+  const phTr1 = document.createElement('tr');
+  const phPerson = document.createElement('th'); phPerson.textContent='Person'; phPerson.style.textAlign='left'; phPerson.style.paddingLeft='12px'; phTr1.appendChild(phPerson);
+  for (const ym of [prevYM, curYM]) {
+    const th = document.createElement('th'); th.textContent = monthName(ym); phTr1.appendChild(th);
+  }
+  phHeadRow.appendChild(phTr1);
+
+  phMonthBody.innerHTML = '';
+  for (const p of OT_PEOPLE) {
+    const tr = document.createElement('tr');
+    const tdP = document.createElement('td'); tdP.textContent = p; tdP.style.textAlign='left'; tdP.style.paddingLeft='12px'; tr.appendChild(tdP);
+    for (const ym of [prevYM, curYM]) {
+      const td = document.createElement('td'); td.textContent = String(agg[ym][p]['PH']); td.className = 'phCol'; tr.appendChild(td);
+    }
+    phMonthBody.appendChild(tr);
+  }
+}
+otMonthEl.addEventListener('change', renderOvertime);
+
+function indexByDate() {
+  const m = new Map();
+  DATA.forEach((r,i)=>m.set(r.date,i));
+  return m;
+}
+function normalizeRow(obj) {
+  const date = String(obj.Date ?? obj.date ?? '').trim();
+  const day = String(obj.Day ?? obj.day ?? '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const r = {date, day, PH_FLAG: String(obj.PH ?? obj.ph ?? obj.PH_FLAG ?? 'NO').trim() || 'NO'};
+  for (const e of EMPLOYEES) r[e] = String(obj[e] ?? obj[e.toLowerCase()] ?? '').trim();
+  return r;
+}
+function mergeRows(newRows) {
+  const idxMap = indexByDate();
+  for (const r of newRows) {
+    const idx = idxMap.get(r.date);
+    if (idx === undefined) DATA.push(r);
+    else DATA[idx] = {...DATA[idx], ...r};
+  }
+  DATA.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim());
+  const rows = [];
+  for (let i=1;i<lines.length;i++) {
+    const vals = lines[i].split(',');
+    const obj = {};
+    headers.forEach((h,j)=>obj[h]=(vals[j]??'').trim());
+    const nr = normalizeRow(obj);
+    if (nr) rows.push(nr);
+  }
+  return rows;
+}
+async function handleFile(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.csv')) {
+    const rows = parseCSV(await file.text());
+    mergeRows(rows);
+    uploadStatus.textContent = `Loaded ${rows.length} rows from CSV.`;
+    resetAll(); return;
+  }
+  if (name.endsWith('.xlsx')) {
+    if (typeof XLSX === 'undefined') {
+      uploadStatus.textContent = "XLSX parser not available. Upload CSV or open with internet access."; return;
+    }
+    const wb = XLSX.read(await file.arrayBuffer(), {type:'array'});
+    const wsName = wb.SheetNames[0];
+    const jsonRows = XLSX.utils.sheet_to_json(wb.Sheets[wsName], {defval:""});
+    const rows = jsonRows.map(normalizeRow).filter(Boolean);
+    mergeRows(rows);
+    uploadStatus.textContent = `Loaded ${rows.length} rows from XLSX (sheet: ${wsName}).`;
+    resetAll(); return;
+  }
+  uploadStatus.textContent = "Unsupported file type.";
+}
+fileInput.addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  uploadStatus.textContent = "Loading...";
+  try { await handleFile(file); }
+  catch (err) { uploadStatus.textContent = "Failed to load file: " + (err?.message || String(err)); }
+});
+exportBtn.addEventListener('click', () => {
+  const headers = ["Date","Day",...EMPLOYEES ,"Public Holiday"];
+  const lines = [headers.join(",")];
+  for (const r of DATA) {
+    const row = [r.date, r.day, ...EMPLOYEES.map(e => r[e] || ""), r.PH_FLAG || 'NO'];
+    const esc = row.map(v => String(v).replaceAll('"','""'));
+    lines.push(esc.map(v => /[",\n]/.test(v) ? `"${v}"` : v).join(","));
+  }
+  const blob = new Blob([lines.join("\n")], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = "shift_schedule_export.csv";
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+
+buildHeader();
+setDefaultCurrentMonthView();
+renderSchedule();
+syncPanelsFromLeft();
+</script>
+</body>
+</html>
