@@ -205,14 +205,8 @@
     -webkit-overflow-scrolling:touch;
     scrollbar-width:thin;
   }
-  .tab{
-    flex:0 0 auto;
-    white-space:nowrap;
-  }
-  .controls{
-    gap:8px;
-    padding:10px;
-  }
+  .tab{flex:0 0 auto;white-space:nowrap;}
+  .controls{gap:8px;padding:10px;}
   .ctrl{min-width:100%;}
   .ctrl[style*="min-width:240px"],
   .ctrl[style*="min-width:360px"]{min-width:100% !important;}
@@ -222,65 +216,73 @@
     -webkit-overflow-scrolling:touch;
     padding:10px;
   }
-  .pill{flex:0 0 auto; white-space:nowrap;}
-  .grid{
-    grid-template-columns:1fr;
-    gap:10px;
-    padding:0 10px 10px;
-  }
-  .paneHeader{padding:9px 10px; font-size:12.5px;}
-  #scrollLeft, #scrollMid, #scrollRight{
-    max-height:none;
-  }
-  #scrollLeft{
-    overflow:auto;
+  .pill{flex:0 0 auto;white-space:nowrap;}
+  .grid{grid-template-columns:1fr;gap:10px;padding:0 10px 10px;}
+  .pane{overflow:visible;}
+  .paneHeader{padding:9px 10px;font-size:12.5px;}
+
+  /* Give each mobile panel its own visible scroll area */
+  #scrollLeft,#scrollMid,#scrollRight{
     -webkit-overflow-scrolling:touch;
+    overflow:auto !important;
+    scrollbar-gutter:auto;
   }
-  #scrollMid, #scrollRight{
-    overflow-x:auto !important;
-    overflow-y:visible !important;
-    -webkit-overflow-scrolling:touch;
+  #scrollLeft{max-height:58vh;}
+  #scrollMid,#scrollRight{max-height:34vh;}
+
+  /* Remove frozen Date/Day columns on phones so the whole table can slide */
+  #scrollLeft .stickyL,
+  #scrollLeft .stickyL2,
+  #scrollLeft thead .stickyL,
+  #scrollLeft thead .stickyL2{
+    position:static !important;
+    left:auto !important;
+    z-index:auto !important;
+    background:rgba(6,12,26,0.92) !important;
+    backdrop-filter:none !important;
   }
+
   #scrollLeft table,
   #scrollMid table,
-  #scrollRight table{
-    min-width:max-content;
-  }
-  #scrollLeft table{min-width:1074px;}
-  #scrollMid table{min-width:120px; width:120px;}
-  #scrollRight table{min-width:360px; width:360px;}
-  th, td{padding:8px 8px; font-size:12px;}
+  #scrollRight table{min-width:max-content;}
+  #scrollLeft table{min-width:1040px !important;width:max-content !important;table-layout:fixed;}
+  #scrollMid table{min-width:120px !important;width:120px !important;table-layout:fixed;}
+  #scrollRight table{min-width:382px !important;width:382px !important;table-layout:fixed;}
+
+  th,td{padding:8px 8px;font-size:12px;}
   tbody td{font-size:13px;}
+
   .col-date,
   #scrollLeft td.stickyL,
-  #scrollLeft th.stickyL{width:128px; min-width:128px; max-width:128px;}
+  #scrollLeft th.stickyL{width:122px !important;min-width:122px !important;max-width:122px !important;}
   .col-day,
   #scrollLeft td.stickyL2,
-  #scrollLeft th.stickyL2{width:112px; min-width:112px; max-width:112px;}
-  #scrollLeft td.stickyL2,
-  #scrollLeft th.stickyL2{left:128px;}
-  #scrollLeft col.col-date-fix{width:128px;}
-  #scrollLeft col.col-day-fix{width:112px;}
-  #scrollLeft col.col-emp-fix{width:118px;}
-  .cellSel,.phSel{height:40px; min-height:40px; border-radius:10px;}
-  #phBody .phSel{height:40px !important; min-height:40px !important;}
-  #sumTable .badge{height:40px !important; min-height:40px !important; border-radius:10px !important;}
-  .otWrap, .uploadWrap{padding:10px;}
+  #scrollLeft th.stickyL2{width:96px !important;min-width:96px !important;max-width:96px !important;}
+  #scrollLeft col.col-date-fix{width:122px !important;}
+  #scrollLeft col.col-day-fix{width:96px !important;}
+  #scrollLeft col.col-emp-fix{width:118px !important;}
+
+  .cellSel,.phSel{height:40px;min-height:40px;border-radius:10px;}
+  #phBody .phSel{height:40px !important;min-height:40px !important;}
+  #sumTable .badge{height:40px !important;min-height:40px !important;border-radius:10px !important;}
+  .otWrap,.uploadWrap{padding:10px;}
   .otControls{padding:10px;}
-  .otTableWrap{overflow:auto; -webkit-overflow-scrolling:touch;}
-  .footerNote{padding:10px; font-size:11.5px;}
+  .otTableWrap{overflow:auto;-webkit-overflow-scrolling:touch;}
+  .footerNote{padding:10px;font-size:11.5px;}
 }
 
 @media (max-width: 560px){
   .wrap{padding:10px 8px 16px;}
-  .tabs{padding:8px 8px 10px; gap:6px;}
-  .tab{height:32px; padding:0 10px; font-size:12px;}
-  .controls, .legend{padding-left:8px; padding-right:8px;}
+  .tabs{padding:8px 8px 10px;gap:6px;}
+  .tab{height:32px;padding:0 10px;font-size:12px;}
+  .controls,.legend{padding-left:8px;padding-right:8px;}
   .grid{padding:0 8px 8px;}
   .paneHeader{padding:8px 9px;}
-  #scrollLeft table{min-width:1000px;}
-  #scrollRight table{min-width:340px; width:340px;}
-  th, td{padding:7px 7px; font-size:11.5px;}
+  #scrollLeft{max-height:56vh;}
+  #scrollMid,#scrollRight{max-height:32vh;}
+  #scrollLeft table{min-width:980px !important;}
+  #scrollRight table{min-width:368px !important;width:368px !important;}
+  th,td{padding:7px 7px;font-size:11.5px;}
   tbody td{font-size:12.5px;}
 }
 
@@ -860,4 +862,3 @@ syncPanelsFromLeft();
 </script>
 </body>
 </html>
-
